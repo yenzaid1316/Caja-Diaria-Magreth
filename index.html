@@ -185,14 +185,14 @@ function calcBalance(){
   });
   return { entradas, salidas, disponible: entradas - salidas };
 }
-function calcResumenHoy(){
-  const hoy = today();
-  // Normalizamos la fecha por si llega como objeto Date desde el Sheet (con hora incluida)
-  const movs = DB.movimientos().filter(m=>String(m.fecha).slice(0,10)===hoy);
+function calcResumenRango(desde, hasta){
+  let movs = DB.movimientos();
+  if(desde) movs = movs.filter(m=>String(m.fecha).slice(0,10) >= desde);
+  if(hasta) movs = movs.filter(m=>String(m.fecha).slice(0,10) <= hasta);
   let entradas=0, salidas=0;
   movs.forEach(m=>{
     const monto = Number(m.monto)||0;
-    if(m.tipo==='abono') entradas += monto; // la inyección NO cuenta como entrada operativa del día
+    if(m.tipo==='abono') entradas += monto; // la inyección NO cuenta como entrada operativa
     else if(SALIDA_TIPOS.includes(m.tipo)) salidas += monto;
   });
   return { entradas, salidas, neto: entradas-salidas };
@@ -204,10 +204,12 @@ function calcResumenHoy(){
 let _filtroTexto = '';
 let _filtroDesde = '';
 let _filtroHasta = '';
+let _resDesde = '';
+let _resHasta = '';
 
 function renderHome(){
   const bal = calcBalance();
-  const hoy = calcResumenHoy();
+  const resumen = calcResumenRango(_resDesde, _resHasta);
   const umbral = Number(localStorage.getItem(ALERTA_KEY)||0);
 
   document.getElementById('screen').innerHTML = `
@@ -227,11 +229,17 @@ function renderHome(){
     </div>
 
     <div class="section">
-      <div class="section-title">Hoy</div>
+      <div class="section-title">Resumen</div>
+      <div class="filtros" style="margin-bottom:8px">
+        <input type="date" id="res-desde" value="${_resDesde}" title="Desde">
+        <input type="date" id="res-hasta" value="${_resHasta}" title="Hasta">
+        <button class="btn btn-secondary" id="btn-calcular-resumen" style="padding:9px 14px;font-size:14px">Calcular</button>
+      </div>
+      <p style="font-size:12px;color:var(--txt3);margin-bottom:8px">${(_resDesde||_resHasta)?'Del '+(_resDesde?fmtDateCorta(_resDesde):'inicio')+' al '+(_resHasta?fmtDateCorta(_resHasta):'hoy'):'Todos los movimientos registrados'}</p>
       <div class="resumen-hoy">
-        <div class="card-sm"><div class="lbl">Entradas</div><div class="val" style="color:var(--green)">${fmt(hoy.entradas)}</div></div>
-        <div class="card-sm"><div class="lbl">Salidas</div><div class="val" style="color:var(--red)">${fmt(hoy.salidas)}</div></div>
-        <div class="card-sm"><div class="lbl">Neto</div><div class="val">${fmt(hoy.neto)}</div></div>
+        <div class="card-sm"><div class="lbl">Entradas</div><div class="val" style="color:var(--green)">${fmt(resumen.entradas)}</div></div>
+        <div class="card-sm"><div class="lbl">Salidas</div><div class="val" style="color:var(--red)">${fmt(resumen.salidas)}</div></div>
+        <div class="card-sm"><div class="lbl">Neto</div><div class="val">${fmt(resumen.neto)}</div></div>
       </div>
     </div>
 
@@ -269,6 +277,11 @@ function renderHome(){
   document.getElementById('btn-gasto').addEventListener('click', ()=>abrirFormMovimiento('gasto'));
   document.getElementById('btn-reporte').addEventListener('click', renderReporte);
   document.getElementById('btn-config').addEventListener('click', renderConfig);
+  document.getElementById('btn-calcular-resumen').addEventListener('click', function(){
+    _resDesde = document.getElementById('res-desde').value;
+    _resHasta = document.getElementById('res-hasta').value;
+    renderHome();
+  });
 
   document.getElementById('f-busqueda').addEventListener('input', function(){ _filtroTexto = this.value; renderListaHistorial(); });
   document.getElementById('f-desde').addEventListener('change', function(){ _filtroDesde = this.value; renderListaHistorial(); });
