@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Caja Diaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f0f; --bg2:#1a1a1a; --bg3:#242424; --bg4:#2e2e2e;
+  --border:#333; --border2:#444;
+  --txt:#f0ede8; --txt2:#c8c2bb; --txt3:#9a948d;
+  --gold:#c9a96e; --gold2:#e8c99a;
+  --green:#4caf7d; --red:#e05c5c; --amber:#d4a017;
+  --r:12px; --r2:8px;
+}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:16px;min-height:100dvh}
+h1,h2{font-weight:400}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;padding-bottom:40px}
+.header{padding:20px 20px 4px;display:flex;align-items:center;justify-content:space-between}
+.header-titulo p{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.header-titulo h1{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold2)}
+.btn-icon{width:38px;height:38px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);color:var(--txt2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.section{padding:0 20px;margin-bottom:16px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.card-balance{background:var(--bg2);border:1px solid rgba(201,169,110,.3);border-radius:var(--r);padding:18px}
+.card-balance .label{font-size:11px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.card-balance .valor{font-family:'DM Serif Display',serif;font-size:30px;color:var(--gold2)}
+.alerta-baja{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.35);color:var(--red);font-size:12px;border-radius:var(--r2);padding:10px 12px;margin-top:10px}
+.resumen-hoy{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.resumen-hoy .card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:10px;text-align:center}
+.resumen-hoy .lbl{font-size:10px;color:var(--txt3);margin-bottom:4px}
+.resumen-hoy .val{font-size:14px;font-weight:500}
+.grid-acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-accion{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 10px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+.btn-accion:active{background:var(--bg3)}
+.btn-accion .ico{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600}
+.btn-accion .ico.entrada{background:rgba(76,175,125,.15);color:var(--green)}
+.btn-accion .ico.salida{background:rgba(224,92,92,.15);color:var(--red)}
+.btn-accion span.lbl{font-size:12.5px;color:var(--txt2)}
+.section-title{font-size:12px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.filtros{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filtros input{flex:1;min-width:100px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--txt);font-size:13px;padding:9px 10px}
+.item-mov{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.item-mov .info p.nom{font-size:13.5px;font-weight:500}
+.item-mov .info p.fecha{font-size:11px;color:var(--txt3);margin-top:2px}
+.item-mov .der{display:flex;align-items:center;gap:8px}
+.item-mov .monto{font-size:14px;font-weight:500;white-space:nowrap}
+.item-mov .monto.entrada{color:var(--green)}
+.item-mov .monto.salida{color:var(--red)}
+.item-mov .acciones{display:flex;gap:4px}
+.item-mov .acciones button{width:26px;height:26px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);color:var(--txt3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px}
+.vacio{text-align:center;color:var(--txt3);font-size:13px;padding:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:var(--r2);cursor:pointer;font-size:15px;font-weight:500;padding:13px 20px}
+.btn-full{width:100%}
+.btn-primary{background:var(--gold);color:#1a1200}
+.btn-secondary{background:var(--bg3);color:var(--txt);border:1px solid var(--border2)}
+.btn-danger{background:rgba(224,92,92,.15);color:var(--red);border:1px solid rgba(224,92,92,.3)}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12.5px;color:var(--txt2);margin-bottom:6px}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--txt);font-size:15px;padding:12px 14px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:90}
+.overlay.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--bg2);border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .25s;z-index:100;max-height:88vh;overflow-y:auto;padding:20px}
+.drawer.show{transform:translateY(0)}
+.drawer-title{font-size:18px;margin-bottom:16px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--bg4);color:var(--txt);padding:10px 18px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="screen"></div>
+</div>
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer"><div id="drawer-content"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG — Google Sheets vía Apps Script
+// ═══════════════════════════════════════
+const GS_URL = "https://script.google.com/macros/s/AKfycbxtLxBmMDGakWRnvl7W4s52QLBHSCzJ6dyQblw29W0Kp1Z6so74yi3GkSvg4WPfTfAdog/exec";
+const GS_SECRET = "Ymls1316";
+const NOMBRE_NEGOCIO = "Magreth";
+const ALERTA_KEY = "cd_alerta_minima";
+
+async function gsSyncAll(){
+  const res = await fetch(GS_URL + '?secret=' + encodeURIComponent(GS_SECRET) + '&action=syncAll');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Error de sincronización');
+  return json.data;
+}
+async function gsWrite(action, data){
+  const res = await fetch(GS_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({secret:GS_SECRET, action, data})
+  });
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'Error al guardar');
+  return json.data;
+}
+
+const DB = {
+  _get(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch{ return null; } },
+  _set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } },
+  movimientos(){ return this._get('movimientos')||[]; },
+  async crear(data){
+    const r = await gsWrite('create', data);
+    await syncData(true);
+    return r;
+  },
+  async actualizar(data){
+    await gsWrite('update', data);
+    await syncData(true);
+  },
+  async eliminar(id){
+    await gsWrite('delete', {id});
+    await syncData(true);
+  },
+  test(){ try{ localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; }catch(e){ return false; } }
+};
+
+let _lastSync = 0;
+let _syncInProgress = false;
+async function syncData(force){
+  const ahora = Date.now();
+  if(!force && _syncInProgress) return;
+  if(!force && (ahora - _lastSync) < 10000) return;
+  _syncInProgress = true;
+  try{
+    const data = await gsSyncAll();
+    DB._set('movimientos', data.movimientos || []);
+    _lastSync = Date.now();
+  } catch(e){ console.error('Sync error:', e); }
+  finally{ _syncInProgress = false; }
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const fmt=n=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n||0);
+const fmtDate=d=>d?new Date(d+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const today=()=>new Date().toISOString().slice(0,10);
+const ENTRADA_TIPOS = ['inyeccion','abono'];
+const SALIDA_TIPOS = ['prestamo','gasto'];
+const TIPO_LABEL = {inyeccion:'Inyección de capital', prestamo:'Préstamo', abono:'Abono', gasto:'Gasto'};
+const TIPO_CAMPO_LABEL = {inyeccion:'Descripción (opcional)', prestamo:'Nombre de la persona', abono:'Nombre de la persona', gasto:'Motivo del gasto'};
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function openDrawer(html){
+  document.getElementById('drawer-content').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('overlay').style.pointerEvents='auto';
+  document.getElementById('drawer').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('overlay').style.pointerEvents='none';
+  document.getElementById('drawer').classList.remove('show');
+}
+
+function calcBalance(){
+  const movs = DB.movimientos();
+  let entradas=0, salidas=0;
+  movs.forEach(m=>{
+    const monto = Number(m.monto)||0;
+    if(ENTRADA_TIPOS.includes(m.tipo)) entradas += monto;
+    else if(SALIDA_TIPOS.includes(m.tipo)) salidas += monto;
+  });
+  return { entradas, salidas, disponible: entradas - salidas };
+}
+function calcResumenHoy(){
+  const hoy = today();
+  const movs = DB.movimientos().filter(m=>m.fecha===hoy);
+  let entradas=0, salidas=0;
+  movs.forEach(m=>{
+    const monto = Number(m.monto)||0;
+    if(ENTRADA_TIPOS.includes(m.tipo)) entradas += monto;
+    else if(SALIDA_TIPOS.includes(m.tipo)) salidas += monto;
+  });
+  return { entradas, salidas, neto: entradas-salidas };
+}
+
+// ═══════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ═══════════════════════════════════════
+let _filtroTexto = '';
+let _filtroDesde = '';
+let _filtroHasta = '';
+
+function renderHome(){
+  const bal = calcBalance();
+  const hoy = calcResumenHoy();
+  const umbral = Number(localStorage.getItem(ALERTA_KEY)||0);
+
+  document.getElementById('screen').innerHTML = `
+    <div class="header">
+      <div class="header-titulo">
+        <p>Caja diaria</p>
+        <h1>${NOMBRE_NEGOCIO}</h1>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-icon" id="btn-reporte" title="Generar reporte">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </button>
+        <button class="btn-icon" id="btn-config" title="Configuración">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Hoy</div>
+      <div class="resumen-hoy">
+        <div class="card-sm"><div class="lbl">Entradas</div><div class="val" style="color:var(--green)">${fmt(hoy.entradas)}</div></div>
+        <div class="card-sm"><div class="lbl">Salidas</div><div class="val" style="color:var(--red)">${fmt(hoy.salidas)}</div></div>
+        <div class="card-sm"><div class="lbl">Neto</div><div class="val">${fmt(hoy.neto)}</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card-balance">
+        <div class="label">Disponible para préstamos</div>
+        <div class="valor">${fmt(bal.disponible)}</div>
+        ${umbral>0 && bal.disponible < umbral ? '<div class="alerta-baja">⚠️ El disponible está por debajo de '+fmt(umbral)+' — considera esperar antes de prestar más.</div>' : ''}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid-acciones">
+        <div class="btn-accion" id="btn-inyeccion"><div class="ico entrada">+</div><span class="lbl">Inyección</span></div>
+        <div class="btn-accion" id="btn-prestamo"><div class="ico salida">−</div><span class="lbl">Préstamo</span></div>
+        <div class="btn-accion" id="btn-abono"><div class="ico entrada">+</div><span class="lbl">Abono</span></div>
+        <div class="btn-accion" id="btn-gasto"><div class="ico salida">−</div><span class="lbl">Gasto</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Historial</div>
+      <div class="filtros">
+        <input type="text" id="f-busqueda" placeholder="Buscar por nombre..." value="${_filtroTexto}">
+        <input type="date" id="f-desde" value="${_filtroDesde}" title="Desde">
+        <input type="date" id="f-hasta" value="${_filtroHasta}" title="Hasta">
+      </div>
+      <div id="lista-historial"></div>
+    </div>
+  `;
+
+  document.getElementById('btn-inyeccion').addEventListener('click', ()=>abrirFormMovimiento('inyeccion'));
+  document.getElementById('btn-prestamo').addEventListener('click', ()=>abrirFormMovimiento('prestamo'));
+  document.getElementById('btn-abono').addEventListener('click', ()=>abrirFormMovimiento('abono'));
+  document.getElementById('btn-gasto').addEventListener('click', ()=>abrirFormMovimiento('gasto'));
+  document.getElementById('btn-reporte').addEventListener('click', renderReporte);
+  document.getElementById('btn-config').addEventListener('click', renderConfig);
+
+  document.getElementById('f-busqueda').addEventListener('input', function(){ _filtroTexto = this.value; renderListaHistorial(); });
+  document.getElementById('f-desde').addEventListener('change', function(){ _filtroDesde = this.value; renderListaHistorial(); });
+  document.getElementById('f-hasta').addEventListener('change', function(){ _filtroHasta = this.value; renderListaHistorial(); });
+
+  renderListaHistorial();
+}
+
+function renderListaHistorial(){
+  const cont = document.getElementById('lista-historial');
+  if(!cont) return;
+  let movs = DB.movimientos().slice().sort((a,b)=>{
+    if(a.fecha!==b.fecha) return a.fecha < b.fecha ? 1 : -1;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  });
+  if(_filtroTexto.trim()){
+    const q = _filtroTexto.trim().toLowerCase();
+    movs = movs.filter(m=>(m.nombre_motivo||'').toLowerCase().includes(q));
+  }
+  if(_filtroDesde) movs = movs.filter(m=>m.fecha >= _filtroDesde);
+  if(_filtroHasta) movs = movs.filter(m=>m.fecha <= _filtroHasta);
+
+  if(movs.length===0){ cont.innerHTML = '<div class="vacio">Sin movimientos registrados</div>'; return; }
+
+  cont.innerHTML = movs.map(m=>{
+    const esEntrada = ENTRADA_TIPOS.includes(m.tipo);
+    return `<div class="item-mov">
+      <div class="info">
+        <p class="nom">${TIPO_LABEL[m.tipo]||m.tipo}${m.nombre_motivo?' · '+m.nombre_motivo:''}</p>
+        <p class="fecha">${fmtDate(m.fecha)}</p>
+      </div>
+      <div class="der">
+        <div class="monto ${esEntrada?'entrada':'salida'}">${esEntrada?'+':'−'} ${fmt(m.monto)}</div>
+        <div class="acciones">
+          <button data-edit="${m.id}" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', function(){
+      const id = this.getAttribute('data-edit');
+      const m = DB.movimientos().find(x=>x.id===id);
+      if(m) abrirFormMovimiento(m.tipo, m);
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// FORMULARIO DE MOVIMIENTO (crear / editar)
+// ═══════════════════════════════════════
+function abrirFormMovimiento(tipo, existente){
+  const esEdicion = !!existente;
+  const titulo = esEdicion ? 'Editar '+TIPO_LABEL[tipo].toLowerCase() : 'Nuevo: '+TIPO_LABEL[tipo];
+  openDrawer(`
+    <div class="drawer-title">${titulo}</div>
+    <div class="form-group">
+      <label class="form-label">Fecha</label>
+      <input class="form-input" id="fm-fecha" type="date" value="${existente?existente.fecha:today()}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">${TIPO_CAMPO_LABEL[tipo]}</label>
+      <input class="form-input" id="fm-nombre" type="text" placeholder="${tipo==='inyeccion'?'Ej: Ahorro personal':'Ej: Juan Pérez'}" value="${existente?(existente.nombre_motivo||''):''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Monto</label>
+      <input class="form-input" id="fm-monto" type="number" placeholder="50000" value="${existente?existente.monto:''}">
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-guardar-mov" style="margin-bottom:8px">Guardar</button>
+    ${esEdicion?'<button class="btn btn-danger btn-full" id="btn-eliminar-mov">Eliminar registro</button>':''}
+  `);
+
+  document.getElementById('btn-guardar-mov').addEventListener('click', async function(){
+    if(this.disabled) return;
+    const fecha = document.getElementById('fm-fecha').value;
+    const nombre_motivo = document.getElementById('fm-nombre').value.trim();
+    const monto = parseFloat(document.getElementById('fm-monto').value);
+    if(!fecha){ alert('Selecciona una fecha'); return; }
+    if(!monto || monto<=0){ alert('Ingresa un monto válido'); return; }
+    this.disabled = true; this.textContent = 'Guardando...';
+    try{
+      if(esEdicion){
+        await DB.actualizar({id:existente.id, tipo, fecha, nombre_motivo, monto});
+      } else {
+        await DB.crear({tipo, fecha, nombre_motivo, monto});
+      }
+      closeDrawer();
+      renderHome();
+      setTimeout(()=>mostrarToast('✅ '+TIPO_LABEL[tipo]+' guardado'), 100);
+    } catch(e){
+      mostrarToast('❌ Error: '+e.message);
+      this.disabled = false; this.textContent = 'Guardar';
+    }
+  });
+
+  const btnDel = document.getElementById('btn-eliminar-mov');
+  if(btnDel) btnDel.addEventListener('click', async function(){
+    if(!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
+    this.disabled = true; this.textContent = 'Eliminando...';
+    try{
+      await DB.eliminar(existente.id);
+      closeDrawer();
+      renderHome();
+      setTimeout(()=>mostrarToast('🗑 Registro eliminado'), 100);
+    } catch(e){
+      mostrarToast('❌ Error: '+e.message);
+      this.disabled = false; this.textContent = 'Eliminar registro';
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// CONFIGURACIÓN (alerta + backup)
+// ═══════════════════════════════════════
+function renderConfig(){
+  const umbral = localStorage.getItem(ALERTA_KEY)||'';
+  document.getElementById('screen').innerHTML = `
+    <div class="header">
+      <button class="btn-icon" id="btn-back-cfg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="header-titulo" style="text-align:right"><h1 style="font-size:18px">Configuración</h1></div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Alerta de saldo bajo</label>
+          <input class="form-input" id="cfg-umbral" type="number" placeholder="Ej: 200000" value="${umbral}">
+          <p style="font-size:11px;color:var(--txt3);margin-top:6px">Si el disponible cae por debajo de este monto, se muestra una alerta en la pantalla principal. Déjalo vacío o en 0 para desactivarla.</p>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-guardar-cfg">Guardar</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">Respaldo de datos</p>
+        <button class="btn btn-secondary btn-full" id="btn-exportar" style="margin-bottom:8px">⬇️ Descargar backup (JSON)</button>
+        <label class="btn btn-secondary btn-full" style="display:block;text-align:center;cursor:pointer">
+          ⬆️ Restaurar desde backup
+          <input type="file" id="input-restaurar" accept=".json" style="display:none">
+        </label>
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-back-cfg').addEventListener('click', renderHome);
+  document.getElementById('btn-guardar-cfg').addEventListener('click', function(){
+    const v = parseFloat(document.getElementById('cfg-umbral').value)||0;
+    localStorage.setItem(ALERTA_KEY, v);
+    mostrarToast('✅ Configuración guardada');
+    setTimeout(renderHome, 500);
+  });
+  document.getElementById('btn-exportar').addEventListener('click', function(){
+    const datos = { version:1, fecha_exportacion:new Date().toISOString(), movimientos: DB.movimientos() };
+    const blob = new Blob([JSON.stringify(datos,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'caja_diaria_backup_'+today()+'.json'; a.click();
+    URL.revokeObjectURL(url);
+    mostrarToast('📄 Backup descargado');
+  });
+  document.getElementById('input-restaurar').addEventListener('change', function(){
+    const file = this.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const datos = JSON.parse(e.target.result);
+        if(!datos.movimientos) throw new Error('Archivo inválido');
+        if(!confirm('¿Restaurar '+datos.movimientos.length+' movimientos? Esto reemplaza los datos actuales en este dispositivo (no en la nube).')) return;
+        DB._set('movimientos', datos.movimientos);
+        mostrarToast('✅ Datos restaurados localmente');
+        setTimeout(renderHome, 500);
+      } catch(err){ mostrarToast('❌ Archivo inválido'); }
+    };
+    reader.readAsText(file);
+  });
+}
+
+// ═══════════════════════════════════════
+// REPORTE EN PDF (rango de fechas + tipo)
+// ═══════════════════════════════════════
+function renderReporte(){
+  document.getElementById('screen').innerHTML = `
+    <div class="header">
+      <button class="btn-icon" id="btn-back-rep">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="header-titulo" style="text-align:right"><h1 style="font-size:18px">Generar reporte</h1></div>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Desde</label>
+          <input class="form-input" id="rep-desde" type="date" value="${today()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hasta</label>
+          <input class="form-input" id="rep-hasta" type="date" value="${today()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de movimiento</label>
+          <select class="form-input" id="rep-tipo">
+            <option value="todos">Todos</option>
+            <option value="inyeccion">Inyección de capital</option>
+            <option value="prestamo">Préstamos</option>
+            <option value="abono">Abonos</option>
+            <option value="gasto">Gastos</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-generar-pdf">📄 Generar y compartir PDF</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-back-rep').addEventListener('click', renderHome);
+  document.getElementById('btn-generar-pdf').addEventListener('click', generarReportePDF);
+}
+
+async function generarReportePDF(){
+  const desde = document.getElementById('rep-desde').value;
+  const hasta = document.getElementById('rep-hasta').value;
+  const tipo = document.getElementById('rep-tipo').value;
+  const btn = document.getElementById('btn-generar-pdf');
+  if(!desde || !hasta){ mostrarToast('⚠️ Selecciona el rango de fechas'); return; }
+
+  let movs = DB.movimientos().filter(m=>m.fecha>=desde && m.fecha<=hasta);
+  if(tipo!=='todos') movs = movs.filter(m=>m.tipo===tipo);
+  movs.sort((a,b)=> a.fecha < b.fecha ? -1 : 1);
+
+  if(movs.length===0){ mostrarToast('⚠️ No hay movimientos en ese rango'); return; }
+
+  btn.disabled = true; btn.textContent = 'Generando...';
+
+  let totalEntradas=0, totalSalidas=0;
+  movs.forEach(m=>{
+    const monto = Number(m.monto)||0;
+    if(ENTRADA_TIPOS.includes(m.tipo)) totalEntradas += monto; else totalSalidas += monto;
+  });
+
+  const alturaEstimada = 30 + 12 + 6 + movs.length*7.5 + 3 + 22 + 10;
+  const doc = pdfCrear(alturaEstimada);
+  let y = pdfHeader(doc, 'Reporte de movimientos', fmtDate(desde)+' — '+fmtDate(hasta));
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor.apply(doc, PDF_COL.labelTxt);
+  doc.text('NEGOCIO', 8, y);
+  doc.setFontSize(11);
+  doc.setTextColor.apply(doc, PDF_COL.valueTxt);
+  doc.text(NOMBRE_NEGOCIO, 8, y+6);
+  y += 12;
+
+  y = pdfSeccionTitulo(doc, y, 'Movimientos');
+  movs.forEach(m=>{
+    const esEntrada = ENTRADA_TIPOS.includes(m.tipo);
+    const col1 = fmtDate(m.fecha);
+    let col2 = (TIPO_LABEL[m.tipo]||m.tipo) + (m.nombre_motivo?' - '+m.nombre_motivo:'');
+    if(col2.length > 26) col2 = col2.slice(0,25)+'…';
+    const col3 = (esEntrada?'+ ':'- ') + fmt(m.monto);
+    y = pdfFilaTabla(doc, y, col1, col2, col3);
+  });
+
+  y += 3;
+  y = pdfFila(doc, y, 'Total entradas', fmt(totalEntradas), false);
+  y = pdfFila(doc, y, 'Total salidas', fmt(totalSalidas), true);
+  y += 3;
+  pdfCajaSaldo(doc, y, 'Neto del período', fmt(totalEntradas-totalSalidas));
+
+  const blob = doc.output('blob');
+  await compartirArchivo(blob, 'reporte_'+desde+'_a_'+hasta+'.pdf');
+
+  btn.disabled = false; btn.textContent = '📄 Generar y compartir PDF';
+}
+
+// ═══════════════════════════════════════
+// GENERADOR DE PDF ESTILO TARJETA
+// ═══════════════════════════════════════
+const PDF_W = 100;
+const PDF_COL = {
+  dark:[22,20,15], gold:[232,201,154], goldLabel:[154,111,36],
+  labelTxt:[74,69,61], valueTxt:[26,26,26], altRow:[245,240,228],
+  border:[225,220,208], subtitle:[214,208,196]
+};
+function pdfCrear(alturaMM){
+  const {jsPDF} = window.jspdf;
+  return new jsPDF({unit:'mm', format:[PDF_W, Math.max(alturaMM,60)]});
+}
+function pdfHeader(doc, titulo, subtitulo){
+  doc.setFillColor.apply(doc, PDF_COL.dark);
+  doc.rect(0,0,PDF_W,22,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(titulo, 8, 12);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.setTextColor.apply(doc, PDF_COL.subtitle);
+  doc.text(subtitulo, 8, 18);
+  return 30;
+}
+function pdfFila(doc, y, label, valor, alterna){
+  if(alterna){ doc.setFillColor.apply(doc, PDF_COL.altRow); doc.rect(0,y-4.5,PDF_W,7,'F'); }
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.setTextColor.apply(doc, PDF_COL.labelTxt);
+  doc.text(label, 8, y);
+  doc.setTextColor.apply(doc, PDF_COL.valueTxt);
+  doc.text(String(valor), PDF_W-8, y, {align:'right'});
+  return y+7;
+}
+function pdfSeccionTitulo(doc, y, texto){
+  doc.setFont('helvetica','bold'); doc.setFontSize(8);
+  doc.setTextColor.apply(doc, PDF_COL.goldLabel);
+  doc.text(texto.toUpperCase(), 8, y);
+  return y+6;
+}
+function pdfFilaTabla(doc, y, col1, col2, col3){
+  doc.setFont('helvetica','bold'); doc.setFontSize(8);
+  doc.setTextColor.apply(doc, PDF_COL.labelTxt);
+  doc.text(col1, 8, y);
+  if(col2) doc.text(col2, 30, y);
+  doc.setTextColor.apply(doc, PDF_COL.valueTxt);
+  doc.text(col3, PDF_W-8, y, {align:'right'});
+  doc.setDrawColor.apply(doc, PDF_COL.border);
+  doc.setLineWidth(0.15);
+  doc.line(8, y+2.3, PDF_W-8, y+2.3);
+  return y+7.5;
+}
+function pdfCajaSaldo(doc, y, label, valor){
+  const h = 16;
+  doc.setFillColor.apply(doc, PDF_COL.dark);
+  doc.roundedRect(8, y, PDF_W-16, h, 2, 2, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.setTextColor(224,217,204);
+  doc.text(label, 12, y+10);
+  doc.setFontSize(14);
+  doc.setTextColor.apply(doc, PDF_COL.gold);
+  doc.text(String(valor), PDF_W-12, y+10.5, {align:'right'});
+  return y+h+6;
+}
+async function compartirArchivo(blob, filename){
+  try{
+    const file = new File([blob], filename, {type:'application/pdf'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:filename});
+      return;
+    }
+  } catch(e){
+    if(e.name==='AbortError') return;
+    console.error('Share error:', e);
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  mostrarToast('📄 PDF descargado — ábrelo y compártelo por WhatsApp');
+}
+
+// ═══════════════════════════════════════
+// ARRANQUE
+// ═══════════════════════════════════════
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible') syncData(false);
+});
+
+(async function(){
+  if(!DB.test()){
+    document.getElementById('screen').innerHTML = '<div style="padding:40px 20px;text-align:center"><p style="color:var(--txt2)">Abre la app en un navegador normal (no incógnito restringido).</p></div>';
+    return;
+  }
+  renderHome();
+  mostrarToast('🔄 Sincronizando...');
+  await syncData(true);
+  renderHome();
+  setTimeout(()=>mostrarToast('✅ Datos actualizados'), 300);
+})();
+</script>
+</body>
+</html>
